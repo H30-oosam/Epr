@@ -22,6 +22,7 @@ import UsersView from './views/Users';
 import DashboardView from './views/Dashboard';
 import TasksView from './views/Tasks';
 import CertificatesView from './views/Certificates';
+import VerifyCertificateView from './views/VerifyCertificate';
 
 // --- Types ---
 type View = 'dashboard' | 'hr' | 'finance' | 'students' | 'pr' | 'media' | 'sales' | 'customer_service' | 'users' | 'tasks' | 'certificates';
@@ -166,6 +167,10 @@ export default function App() {
       default: return <DashboardView profile={profile} />;
     }
   }, [currentView, profile]);
+
+  // Handle public routes
+  const isVerifyPage = window.location.pathname.startsWith('/verify/');
+  if (isVerifyPage) return <VerifyCertificateView />;
 
   if (loading) return (
     <div className="flex h-screen items-center justify-center bg-slate-950">

@@ -3,11 +3,11 @@ import {
   GraduationCap, Plus, Search, Filter, QrCode, 
   Award, Clock, Printer, Trash2, CheckCircle2,
   Phone, Mail, MapPin, UserCheck, AlertCircle,
-  FileText
+  FileText, ExternalLink
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { db } from '../lib/firebase';
-import { collection, query, onSnapshot, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, addDoc, deleteDoc, doc, updateDoc, where } from 'firebase/firestore';
 
 interface Student {
   id: string;
@@ -31,8 +31,19 @@ export default function StudentsView({ profile }: { profile: any }) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [certHistory, setCertHistory] = useState<any[]>([]);
   
   const canWrite = profile?.email === 'hossamelwardany132@gmail.com' || profile?.email === 'hossam@admin.com' || profile?.permissions?.includes('students:write') || profile?.permissions?.includes('student_affairs:write');
+  
+  // Fetch certificate history for selected student
+  useEffect(() => {
+    if (!selectedStudent) return;
+    const q = query(collection(db, 'issued_certificates'), where('studentId', '==', selectedStudent.id));
+    const unsub = onSnapshot(q, s => {
+      setCertHistory(s.docs.map(d => ({ id: d.id, ...d.data() } as any)).sort((a, b) => (b.issuedAt?.seconds || 0) - (a.issuedAt?.seconds || 0)));
+    }, (err) => console.warn('Cert History Snapshot error:', err.message));
+    return unsub;
+  }, [selectedStudent]);
   
   // For New Student Modal
   const [showAddModal, setShowAddModal] = useState(false);
@@ -154,96 +165,101 @@ export default function StudentsView({ profile }: { profile: any }) {
           </div>
         </div>
 
-        {/* Certificate Studio */}
+        {/* Student details & History */}
         <div className="lg:col-span-8 space-y-6">
-          <div className="bg-slate-900 rounded-[2.5rem] border border-slate-800 p-8 flex flex-col items-center">
-            
-            <div className="w-full flex justify-between items-center mb-10 pb-6 border-b border-slate-800">
-               <div>
-                 <h3 className="text-xl font-black text-white arabic-font leading-none mb-2">استوديو الشهادات الذكي</h3>
-                 <p className="text-xs text-slate-400 font-medium">تصميم وتخصيص شهادات الاعتماد لشركة رحاب</p>
-               </div>
-               <div className="flex gap-2">
-                 <button className="flex items-center gap-2 px-6 py-3 bg-slate-800 text-white rounded-2xl text-xs font-bold border border-slate-700 hover:bg-slate-700 transition-all">
-                    <QrCode size={16} />
-                    <span>توليد QR</span>
-                 </button>
-                 <button 
-                  onClick={() => window.print()}
-                  className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl text-xs font-bold shadow-xl shadow-indigo-600/20 hover:bg-indigo-500 transition-all"
-                >
-                    <Printer size={16} />
-                    <span>طباعة واعتماد</span>
-                 </button>
-               </div>
-            </div>
-
+          <div className="bg-slate-900 rounded-[2.5rem] border border-slate-800 p-8">
             {selectedStudent ? (
-              <motion.div 
-                layoutId="cert-box"
-                className="w-full max-w-2xl aspect-[1.4/1] bg-white text-slate-900 p-12 rounded-lg shadow-2xl relative overflow-hidden transition-all duration-700"
-                style={{ direction: 'rtl' }}
-              >
-                {/* Frame */}
-                <div 
-                  style={{ 
-                    borderColor: currentTemplate.color, 
-                    borderStyle: currentTemplate.border as any,
-                    borderWidth: '12px'
-                  }} 
-                  className="absolute inset-6 pointer-events-none rounded-sm"
-                ></div>
-
-                {/* Content */}
-                <div className="relative z-10 flex flex-col h-full items-center text-center">
-                  <div className="mb-8">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full mb-2 inline-block">Official Accreditation</span>
-                    <h4 className="text-2xl font-black text-slate-950 arabic-font">أكاديمية رحاب للتميز التقني</h4>
-                    <div className="w-16 h-1 bg-indigo-600 mx-auto mt-2"></div>
+              <div className="space-y-10">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-slate-800">
+                  <div className="flex items-center gap-6">
+                    <div className="w-24 h-24 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-[2rem] flex items-center justify-center text-white shadow-2xl shadow-indigo-500/20">
+                       <GraduationCap size={48} />
+                    </div>
+                    <div>
+                       <h3 className="text-3xl font-black text-white arabic-font mb-2">{selectedStudent.name}</h3>
+                       <div className="flex flex-wrap gap-2">
+                          <span className="px-3 py-1 bg-slate-800 border border-slate-700 rounded-lg text-[10px] font-black text-slate-400 uppercase tracking-widest">{selectedStudent.course}</span>
+                          <span className="px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-[10px] font-black text-indigo-400 uppercase tracking-widest">UID: {selectedStudent.id.substring(0,8)}</span>
+                       </div>
+                    </div>
                   </div>
-
-                  <p className="text-xs text-slate-500 arabic-font font-medium mb-6">نشهد بموجب هذا السند الرسمي أن الطالب:</p>
-                  
-                  <h5 className="text-3xl font-black text-indigo-700 arabic-font border-b-2 border-indigo-100 px-10 pb-2 mb-8">
-                    {selectedStudent.name}
-                  </h5>
-
-                  <p className="text-xs text-slate-600 arabic-font font-medium max-w-md leading-relaxed mb-6">
-                    قد أتم بنجاح وبكفاءة تشغيلية عالية جميع متطلبات الدراسة العملية والنظرية في البرنامج التدريبي المعتمد:
-                  </p>
-
-                  <div className="bg-slate-100 border border-slate-200 px-6 py-3 rounded-2xl mb-8">
-                    <span className="text-lg font-black text-slate-950 arabic-font">{selectedStudent.course}</span>
-                  </div>
-
-                  <div className="w-full mt-auto flex justify-between items-end px-10">
-                    <div className="text-right">
-                       <p className="text-[10px] text-slate-400 font-bold mb-1">المحاضر المعتمد:</p>
-                       <p className="text-xs font-black text-slate-800 arabic-font">{currentTemplate.lecturer}</p>
-                       <div className="w-24 h-[1px] bg-indigo-200 mt-1"></div>
-                    </div>
-
-                    <div className="flex flex-col items-center gap-1 opacity-80 group cursor-pointer hover:opacity-100 transition-opacity">
-                       <QrCode size={48} className="text-slate-900" />
-                       <span className="text-[8px] font-black text-slate-400 font-mono">APP-ID: {selectedStudent.id.substring(0,8)}</span>
-                    </div>
-
-                    <div className="text-left">
-                       <p className="text-[10px] text-slate-400 font-bold mb-1">الختم والتاريخ:</p>
-                       <p className="text-xs font-black text-slate-800 arabic-font">{new Date().toLocaleDateString('ar-EG')}</p>
-                       <div className="w-24 h-[1px] bg-slate-200 mt-1"></div>
-                    </div>
+                  <div className="flex items-center gap-4">
+                     <div className="text-right">
+                        <p className="text-[10px] font-black text-slate-500 uppercase mb-1">نسبة الحضور</p>
+                        <div className="flex items-center gap-3">
+                           <div className="h-2 w-32 bg-slate-800 rounded-full overflow-hidden">
+                              <motion.div initial={{ width: 0 }} animate={{ width: `${selectedStudent.attendanceRate}%` }} className="h-full bg-indigo-500" />
+                           </div>
+                           <span className="text-sm font-black text-white">{selectedStudent.attendanceRate}%</span>
+                        </div>
+                     </div>
                   </div>
                 </div>
 
-                {/* Decorative Elements */}
-                <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-indigo-600/5 rounded-full blur-3xl"></div>
-                <div className="absolute -top-10 -left-10 w-40 h-40 bg-indigo-600/5 rounded-full blur-3xl"></div>
-              </motion.div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                   <div className="space-y-6">
+                      <h4 className="font-black text-white arabic-font flex items-center gap-2">
+                         <Phone size={18} className="text-indigo-400" />
+                         بيانات التواصل
+                      </h4>
+                      <div className="space-y-3">
+                         <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-between">
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">رقم الهاتف</span>
+                            <span className="text-sm font-bold text-white">{selectedStudent.phone}</span>
+                         </div>
+                         <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl flex items-center justify-between">
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">معلومات الدفع</span>
+                            <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase ${selectedStudent.paymentStatus === 'مسدد بالكامل' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`}>
+                               {selectedStudent.paymentStatus}
+                            </span>
+                         </div>
+                      </div>
+                   </div>
+
+                   <div className="space-y-6">
+                      <h4 className="font-black text-white arabic-font flex items-center gap-2">
+                         <Award size={18} className="text-indigo-400" />
+                         سجل الشهادات المستخرجة
+                      </h4>
+                      <div className="space-y-3 max-h-[300px] overflow-y-auto no-scrollbar">
+                         {certHistory.length > 0 ? certHistory.map(cert => (
+                            <div key={cert.id} className="p-4 bg-slate-950 border border-indigo-500/20 rounded-2xl flex items-center justify-between group hover:border-indigo-500/40 transition-all">
+                               <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 bg-emerald-500/10 text-emerald-400 rounded-xl flex items-center justify-center">
+                                     <CheckCircle2 size={20} />
+                                  </div>
+                                  <div>
+                                     <p className="text-sm font-bold text-white arabic-font">{cert.course}</p>
+                                     <p className="text-[10px] font-bold text-slate-500 uppercase">{cert.issuedAt?.toDate().toLocaleDateString('ar-EG')} • Grade: {cert.grade}</p>
+                                  </div>
+                               </div>
+                               <button 
+                                 onClick={() => window.open(`/verify/${cert.id}`, '_blank')}
+                                 className="opacity-0 group-hover:opacity-100 p-2 text-indigo-400 hover:text-white transition-all"
+                               >
+                                  <ExternalLink size={16} />
+                               </button>
+                            </div>
+                         )) : (
+                           <div className="p-10 border-2 border-dashed border-slate-800 rounded-3xl text-center">
+                              <p className="text-xs text-slate-500 font-bold arabic-font italic">لم يتم استخراج أي شهادات لهذا الطالب بعد</p>
+                           </div>
+                         )}
+                      </div>
+                   </div>
+                </div>
+
+                <div className="pt-6 border-t border-slate-800 flex justify-end">
+                   <div className="flex items-center gap-3 text-slate-500">
+                      <Clock size={14} />
+                      <span className="text-[10px] font-black uppercase tracking-widest">آخر تحديث لنشاط الطالب: {new Date().toLocaleDateString()}</span>
+                   </div>
+                </div>
+              </div>
             ) : (
-              <div className="py-20 text-center text-slate-500">
-                <FileText size={64} className="mx-auto mb-4 opacity-20" />
-                <p className="font-bold arabic-font">اختر طالباً للمعاينة المباشرة</p>
+              <div className="py-40 text-center">
+                <GraduationCap size={80} className="mx-auto mb-6 text-slate-800" />
+                <p className="text-slate-500 font-black arabic-font">اختر طالباً من القائمة لعرض ملفه الشخصي وسجل إنجازاته</p>
               </div>
             )}
           </div>

@@ -136,9 +136,37 @@
         "phone": { "type": "string" },
         "status": { "type": "string", "enum": ["active", "graduated", "dropped"] },
         "totalPaid": { "type": "number" },
-        "balance": { "type": "number" }
+        "balance": { "type": "number" },
+        "course": { "type": "string" },
+        "progress": { "type": "number" },
+        "grade": { "type": "string" }
       },
-      "required": ["name", "phone"]
+      "required": ["name", "phone", "course"]
+    },
+    "CertificateTemplate": {
+      "title": "CertificateTemplate",
+      "description": "Template for generating certificates",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "lecturer": { "type": "string" },
+        "specialization": { "type": "string" }
+      },
+      "required": ["title", "specialization"]
+    },
+    "IssuedCertificate": {
+      "title": "IssuedCertificate",
+      "description": "Record of a certificate issued to a student",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "course": { "type": "string" },
+        "grade": { "type": "string" },
+        "issuedAt": { "type": "string", "format": "date-time" },
+        "issuer": { "type": "string" }
+      },
+      "required": ["studentId", "studentName", "course", "issuedAt"]
     },
     "Course": {
       "title": "Course",
@@ -306,6 +334,14 @@
     "/leads/{leadId}": {
       "schema": "Lead",
       "description": "Sales leads"
+    },
+    "/issued_certificates/{certId}": {
+      "schema": "IssuedCertificate",
+      "description": "Certificates issued to students"
+    },
+    "/certificate_templates/{templateId}": {
+      "schema": "CertificateTemplate",
+      "description": "Templates for certificates"
     }
   }
 }

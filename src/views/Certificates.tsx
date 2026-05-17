@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Award, Search, Printer, Download, QrCode, 
+  Award, Search, Printer, Download, QrCode as qrIcon, 
   FileCheck, Users, GraduationCap, Filter,
-  ExternalLink, CheckCircle2, MoreVertical
+  ExternalLink, CheckCircle2, MoreVertical, AlertTriangle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { QRCodeCanvas } from 'qrcode.react';
+// @ts-ignore
+import html2pdf from 'html2pdf.js';
 import { db } from '../lib/firebase';
 import { 
   collection, query, onSnapshot, addDoc, 
@@ -36,6 +39,9 @@ export default function CertificatesView({ profile }: { profile: any }) {
   const [selectedTemplate, setSelectedTemplate] = useState<'default' | 'cfbl' | 'rehab'>('default');
   const [certName, setCertName] = useState('');
   const [certCourse, setCertCourse] = useState('');
+  const [certGrade, setCertGrade] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [isIssuing, setIsIssuing] = useState(false);
 
   const canWrite = profile?.role === 'admin' || profile?.email === 'hossam@admin.com';
 
@@ -43,8 +49,25 @@ export default function CertificatesView({ profile }: { profile: any }) {
     if (selectedGrad) {
       setCertName(selectedGrad.name);
       setCertCourse(selectedGrad.course);
+      setCertGrade(selectedGrad.grade);
+      setError(null);
     }
   }, [selectedGrad]);
+
+  const generatePDF = () => {
+    const element = document.getElementById('certificate-to-print');
+    if (!element) return;
+    
+    const opt = {
+      margin: 0,
+      filename: `certificate-${certName.replace(/\s+/g, '-')}.pdf`,
+      image: { type: 'jpeg' as const, quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' as const }
+    };
+
+    html2pdf().from(element).set(opt).save();
+  };
 
   useEffect(() => {
     // Only fetch students who reached 100% progress
@@ -72,18 +95,29 @@ export default function CertificatesView({ profile }: { profile: any }) {
   }, []);
 
   const issueCertificate = async (student: Student) => {
+    if (!certName.trim() || !certCourse.trim() || !certGrade.trim()) {
+      setError('يرجى التأكد من ملء جميع هقينات الشهادة (الاسم، الدورة، التقدير)');
+      return;
+    }
+
+    setIsIssuing(true);
+    setError(null);
+
     try {
       const certRef = await addDoc(collection(db, 'issued_certificates'), {
         studentId: student.id,
-        studentName: certName || student.name,
-        course: certCourse || student.course,
-        grade: student.grade,
+        studentName: certName,
+        course: certCourse,
+        grade: certGrade,
         issuedAt: Timestamp.now(),
         issuer: profile?.name || 'نظام رحاب التلقائي'
       });
       console.log('Certificate Issued:', certRef.id);
+      setIsIssuing(false);
     } catch (err) {
       console.error(err);
+      setError('حدث خطأ أثناء حفظ الشهادة');
+      setIsIssuing(false);
     }
   };
 
@@ -167,53 +201,85 @@ export default function CertificatesView({ profile }: { profile: any }) {
         <div className="lg:col-span-8 space-y-6">
            <div className="bg-slate-900 rounded-[2.5rem] border border-slate-800 p-8">
               <div className="flex justify-between items-center mb-10 pb-6 border-b border-slate-800">
-                 <div>
-                   <h4 className="text-xl font-black text-white arabic-font mb-2">معاينة وتخصيص الشهادة</h4>
-                   <div className="flex gap-2">
-                      <button 
-                        onClick={() => setSelectedTemplate('default')}
-                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${selectedTemplate === 'default' ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
-                      >
-                         الافتراضي
-                      </button>
-                      <button 
-                        onClick={() => setSelectedTemplate('cfbl')}
-                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${selectedTemplate === 'cfbl' ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
-                      >
-                         أكاديمية CFBL
-                      </button>
-                      <button 
-                        onClick={() => setSelectedTemplate('rehab')}
-                        className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${selectedTemplate === 'rehab' ? 'bg-indigo-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}
-                      >
-                         شهادة رحاب
-                      </button>
+                                 <div className="flex gap-4 items-center">
+                     <div className="flex gap-2 p-1 bg-slate-950 rounded-xl border border-slate-800">
+                        <button 
+                          onClick={() => setSelectedTemplate('default')}
+                          className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all flex items-center gap-2 ${selectedTemplate === 'default' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
+                        >
+                           {selectedTemplate === 'default' && <motion.div layoutId="template-dot" className="w-2 h-2 rounded-full bg-current" />}
+                           الافتراضي
+                        </button>
+                        <button 
+                          onClick={() => setSelectedTemplate('cfbl')}
+                          className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all flex items-center gap-2 ${selectedTemplate === 'cfbl' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
+                        >
+                           {selectedTemplate === 'cfbl' && <motion.div layoutId="template-dot" className="w-2 h-2 rounded-full bg-current" />}
+                           أكاديمية CFBL
+                        </button>
+                        <button 
+                          onClick={() => setSelectedTemplate('rehab')}
+                          className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all flex items-center gap-2 ${selectedTemplate === 'rehab' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
+                        >
+                           {selectedTemplate === 'rehab' && <motion.div layoutId="template-dot" className="w-2 h-2 rounded-full bg-current" />}
+                           شهادة رحاب
+                        </button>
+                     </div>
                    </div>
                    
                    {selectedGrad && (
-                     <div className="flex gap-3 mt-4">
-                        <div className="flex-1">
-                           <label className="text-[10px] font-black text-slate-500 uppercase mb-1 block">اسم الطالب في الشهادة</label>
-                           <input 
-                             type="text" 
-                             value={certName}
-                             onChange={(e) => setCertName(e.target.value)}
-                             className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
-                           />
+                     <div className="space-y-4 mt-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                           <div className="flex-1">
+                              <label className="text-[10px] font-black text-slate-500 uppercase mb-1 block">اسم الطالب في الشهادة</label>
+                              <input 
+                                type="text" 
+                                value={certName}
+                                onChange={(e) => setCertName(e.target.value)}
+                                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-bold"
+                              />
+                           </div>
+                           <div className="flex-1">
+                              <label className="text-[10px] font-black text-slate-500 uppercase mb-1 block">مسمى الدورة</label>
+                              <input 
+                                type="text" 
+                                value={certCourse}
+                                onChange={(e) => setCertCourse(e.target.value)}
+                                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-bold"
+                              />
+                           </div>
+                           <div className="flex-1">
+                              <label className="text-[10px] font-black text-slate-500 uppercase mb-1 block">التقدير</label>
+                              <input 
+                                type="text" 
+                                value={certGrade}
+                                onChange={(e) => setCertGrade(e.target.value)}
+                                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-bold"
+                              />
+                           </div>
                         </div>
-                        <div className="flex-1">
-                           <label className="text-[10px] font-black text-slate-500 uppercase mb-1 block">مسمى الدورة</label>
-                           <input 
-                             type="text" 
-                             value={certCourse}
-                             onChange={(e) => setCertCourse(e.target.value)}
-                             className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
-                           />
-                        </div>
+
+                        {error && (
+                          <motion.div 
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className="bg-red-500/10 border border-red-500/50 p-3 rounded-xl flex items-center gap-2 text-red-500 text-[10px] font-black arabic-font"
+                          >
+                             <AlertTriangle size={14} />
+                             {error}
+                          </motion.div>
+                        )}
                      </div>
                    )}
                  </div>
                  <div className="flex gap-2">
+                    <button 
+                      onClick={generatePDF}
+                      className="flex items-center gap-2 px-6 py-3 bg-slate-800 text-white rounded-2xl text-xs font-black border border-slate-700 hover:bg-slate-700 transition-all font-mono"
+                    >
+                       <Download size={16} />
+                       <span>PDF</span>
+                    </button>
                     <button 
                       onClick={() => window.print()}
                       className="flex items-center gap-2 px-6 py-3 bg-slate-800 text-white rounded-2xl text-xs font-black border border-slate-700 hover:bg-slate-700 transition-all font-mono"
@@ -223,16 +289,17 @@ export default function CertificatesView({ profile }: { profile: any }) {
                     </button>
                     <button 
                       onClick={() => issueCertificate(selectedGrad!)}
-                      className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl text-xs font-black shadow-xl shadow-indigo-600/20 hover:bg-indigo-500 transition-all arabic-font"
+                      disabled={isIssuing}
+                      className={`flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl text-xs font-black shadow-xl shadow-indigo-600/20 hover:bg-indigo-500 transition-all arabic-font ${isIssuing ? 'opacity-50 cursor-wait' : ''}`}
                     >
                        <CheckCircle2 size={16} />
-                       <span>اعتماد واستخراج</span>
+                       <span>{isIssuing ? 'جاري الاعتماد...' : 'اعتماد واستخراج'}</span>
                     </button>
                  </div>
               </div>
 
               {selectedGrad ? (
-                <div className="relative flex justify-center py-10 bg-slate-950/40 rounded-[2rem] border border-slate-800/50 overflow-hidden">
+                <div className="relative flex justify-center py-10 bg-slate-950/40 rounded-[2rem] border border-slate-800/50 overflow-hidden" id="certificate-to-print">
                   {selectedTemplate === 'default' && (
                     <motion.div 
                       initial={{ opacity: 0, y: 20 }}
@@ -271,7 +338,7 @@ export default function CertificatesView({ profile }: { profile: any }) {
                             <div className="bg-indigo-50 border-x-4 border-indigo-600 py-3 px-10 inline-block">
                                <span className="text-2xl font-black text-indigo-900 arabic-font">{certCourse}</span>
                             </div>
-                            <p className="text-sm font-bold text-slate-600 arabic-font leading-relaxed">وقد حصل على تقدير عام <span className="font-black text-indigo-700 underline decoration-indigo-200">({selectedGrad.grade})</span> مما يؤهله للعمل الاحترافي في هذا المجال.</p>
+                            <p className="text-sm font-bold text-slate-600 arabic-font leading-relaxed">وقد حصل على تقدير عام <span className="font-black text-indigo-700 underline decoration-indigo-200">({certGrade})</span> مما يؤهله للعمل الاحترافي في هذا المجال.</p>
                          </div>
                          <div className="w-full mt-auto flex justify-between items-end px-4">
                             <div className="text-right">
@@ -279,8 +346,14 @@ export default function CertificatesView({ profile }: { profile: any }) {
                                <p className="text-sm font-black text-slate-800 arabic-font">م. حسام الورداني</p>
                                <div className="w-24 h-px bg-slate-200 mt-2"></div>
                             </div>
-                            <div className="flex flex-col items-center gap-1">
-                               <div className="p-2 border-2 border-slate-100 rounded-xl"><QrCode size={48} className="text-slate-900" /></div>
+                            <div className="flex flex-col items-center gap-1 group">
+                               <div className="p-2 border-2 border-slate-100 rounded-xl">
+                                  <QRCodeCanvas 
+                                    value={`${window.location.origin}/verify/${selectedGrad.id}`}
+                                    size={48}
+                                    level="L"
+                                  />
+                               </div>
                                <span className="text-[8px] font-bold text-slate-400 uppercase">Verify: RAHAB-CERT-{selectedGrad.id.substring(0,8)}</span>
                             </div>
                             <div className="text-left">
@@ -321,12 +394,18 @@ export default function CertificatesView({ profile }: { profile: any }) {
                             <p className="text-[11px] font-medium leading-relaxed italic text-slate-600">
                                CFBL Educational Academy is honored to grant this certificate for successfully passing the Professional {certCourse}
                             </p>
-                            <p className="text-[11px] font-medium text-slate-600">with all wishes for success and lasting success.</p>
+                            <p className="text-[11px] font-medium text-slate-600">with grade ({certGrade}) and all wishes for success and lasting success.</p>
                          </div>
 
                          <div className="mt-auto w-full flex justify-between items-end pb-8">
-                            <div className="flex items-center gap-2">
-                               <div className="w-12 h-12 bg-[#2d3a6d] rounded-full flex items-center justify-center text-white font-black text-xl">CFBL</div>
+                            <div className="flex items-center gap-4">
+                               <div className="p-1 bg-white border border-slate-100 shadow-sm rounded-lg">
+                                  <QRCodeCanvas 
+                                    value={`${window.location.origin}/verify/${selectedGrad.id}`}
+                                    size={36}
+                                    level="L"
+                                  />
+                               </div>
                                <div className="text-[8px] font-bold leading-tight">
                                   <p className="text-[#2d3a6d]">CFBL ACADEMY</p>
                                   <p className="text-[#b4975a]">COURSE FOR A BETTER LIFE</p>
@@ -354,10 +433,18 @@ export default function CertificatesView({ profile }: { profile: any }) {
                              <div className="w-8 h-8 bg-[#004d40] rounded flex items-center justify-center text-white font-bold">R</div>
                              <h4 className="text-lg font-black tracking-widest uppercase">REHAB</h4>
                           </div>
-                          <div className="flex gap-1">
-                             <div className="w-1 h-8 bg-[#004d40]"></div>
-                             <div className="w-1 h-8 bg-emerald-700"></div>
-                             <div className="w-1 h-8 bg-emerald-800"></div>
+                          <div className="flex gap-4 items-center">
+                             <div className="p-1 bg-white/50 border border-[#004d40]/10 rounded">
+                                <QRCodeCanvas 
+                                  value={`${window.location.origin}/verify/${selectedGrad.id}`}
+                                  size={32}
+                                />
+                             </div>
+                             <div className="flex gap-1">
+                                <div className="w-1 h-8 bg-[#004d40]"></div>
+                                <div className="w-1 h-8 bg-emerald-700"></div>
+                                <div className="w-1 h-8 bg-emerald-800"></div>
+                             </div>
                           </div>
                        </div>
 
@@ -385,7 +472,7 @@ export default function CertificatesView({ profile }: { profile: any }) {
 
                           <div className="max-w-md mt-6">
                              <p className="text-xs font-bold leading-relaxed tracking-wider uppercase opacity-80">
-                                HAS SUCCESSFULLY COMPLETED THEIR TRAINING COURSE IN <span className="text-[#d4af37]">{certCourse}</span> AND HAS PASSED IT SUCCESSFULLY. THIS CERTIFICATE IS ISSUED AS A TESTAMENT TO THAT.
+                                HAS SUCCESSFULLY COMPLETED THEIR TRAINING COURSE IN <span className="text-[#d4af37]">{certCourse}</span> WITH GRADE <span className="text-[#d4af37]">({certGrade})</span> AND HAS PASSED IT SUCCESSFULLY. THIS CERTIFICATE IS ISSUED AS A TESTAMENT TO THAT.
                              </p>
                           </div>
 
@@ -414,7 +501,6 @@ export default function CertificatesView({ profile }: { profile: any }) {
                    <p className="font-black arabic-font">اختر خريجاً من القائمة الجانبية لبدء عملية الاستخراج</p>
                 </div>
               )}
-           </div>
 
            {/* Recent Certificates Log */}
            <div className="bg-slate-900 rounded-[2.5rem] border border-slate-800 p-8">
