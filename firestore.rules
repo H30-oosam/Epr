@@ -14,7 +14,7 @@ service cloud.firestore {
         request.auth.token.email == 'hossamelwardany132@gmail.com' || 
         request.auth.token.email == 'hossam@admin.com' ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'admin')
       ); 
     }
 
@@ -22,9 +22,11 @@ service cloud.firestore {
       return isAdmin() || (
         isSignedIn() && 
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == module || 
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.permissions.contains(module) || 
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.permissions.contains(module + ':' + action)
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == module || (
+            'permissions' in get(/databases/$(database)/documents/users/$(request.auth.uid)).data &&
+            (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.permissions.contains(module) || 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.permissions.contains(module + ':' + action))
+          )
         )
       );
     }
@@ -40,7 +42,7 @@ service cloud.firestore {
       return data.keys().hasAll(['name', 'email', 'role', 'status']) &&
              data.name is string && data.name.size() <= 100 &&
              data.email is string && data.email.size() <= 100 &&
-             data.role in ['admin', 'hr', 'finance', 'student_affairs', 'pr', 'media', 'sales', 'customer_service'] &&
+             data.role in ['admin', 'hr', 'finance', 'student_affairs', 'pr', 'media', 'sales', 'customer_service', 'staff', 'certificates', 'tasks'] &&
              data.status in ['active', 'inactive'];
     }
 
@@ -65,33 +67,33 @@ service cloud.firestore {
     }
 
     match /employees/{employeeId} {
-      allow read: if isSignedIn() && (canRead('hr') || existing().userId == request.auth.uid || existing().email == request.auth.token.email);
+      allow read: if isSignedIn();
       allow write: if canWrite('hr');
       allow update: if isSignedIn() && (canWrite('hr') || (existing().email == request.auth.token.email && incoming().diff(existing()).affectedKeys().hasOnly(['uid'])));
     }
 
     match /attendance/{attendanceId} {
-      allow read: if canRead('hr');
+      allow read: if isSignedIn();
       allow write: if canWrite('hr');
     }
 
     match /leaves/{leaveId} {
-      allow read: if canRead('hr');
+      allow read: if isSignedIn();
       allow write: if canWrite('hr');
     }
 
     match /salary_records/{recordId} {
-      allow read: if canRead('hr') || canRead('finance');
+      allow read: if isSignedIn();
       allow write: if canWrite('hr') || canWrite('finance');
     }
 
     match /recruitment/{applicationId} {
-      allow read: if canRead('hr');
+      allow read: if isSignedIn();
       allow write: if canWrite('hr');
     }
 
     match /performance_reviews/{reviewId} {
-      allow read: if canRead('hr');
+      allow read: if isSignedIn();
       allow write: if canWrite('hr');
     }
 
@@ -101,7 +103,7 @@ service cloud.firestore {
     }
 
     match /students/{studentId} {
-      allow read: if canRead('students');
+      allow read: if isSignedIn();
       allow write: if canWrite('students');
     }
 
@@ -111,12 +113,12 @@ service cloud.firestore {
     }
 
     match /transactions/{transactionId} {
-      allow read: if canRead('finance');
+      allow read: if isSignedIn();
       allow write: if canWrite('finance');
     }
 
     match /projects/{projectId} {
-      allow read: if canRead('media');
+      allow read: if isSignedIn();
       allow write: if canWrite('media');
     }
 
@@ -126,12 +128,12 @@ service cloud.firestore {
     }
 
     match /issued_certificates/{certId} {
-      allow read: if canRead('students') || canRead('certificates');
+      allow read: if isSignedIn();
       allow write: if canWrite('students') || canWrite('certificates');
     }
 
     match /leads/{leadId} {
-      allow read: if canRead('sales');
+      allow read: if isSignedIn();
       allow write: if canWrite('sales');
     }
 
@@ -141,7 +143,7 @@ service cloud.firestore {
     }
 
     match /invoices/{invoiceId} {
-      allow read: if canRead('finance');
+      allow read: if isSignedIn();
       allow write: if canWrite('finance');
     }
   }
