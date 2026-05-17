@@ -1,0 +1,311 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "System user with role-based access",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "hr", "finance", "student_affairs", "pr", "media", "sales", "customer_service"] },
+        "status": { "type": "string", "enum": ["active", "inactive"] },
+        "branchId": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "email", "role", "status"]
+    },
+    "Branch": {
+      "title": "Branch",
+      "description": "Company branch location",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "location": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "Employee": {
+      "title": "Employee",
+      "description": "Employee HR details",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "dept": { "type": "string" },
+        "salary": { "type": "number" },
+        "status": { "type": "string", "enum": ["نشط", "إجازة", "معلق"] },
+        "joinDate": { "type": "string", "format": "date" },
+        "permissions": { "type": "array", "items": { "type": "string" } },
+        "email": { "type": "string" },
+        "phone": { "type": "string" }
+      },
+      "required": ["name", "role", "dept", "salary"]
+    },
+    "Leave": {
+      "title": "Leave",
+      "description": "Employee leave request",
+      "type": "object",
+      "properties": {
+        "employeeId": { "type": "string" },
+        "startDate": { "type": "string", "format": "date" },
+        "endDate": { "type": "string", "format": "date" },
+        "type": { "type": "string", "enum": ["سنوية", "مرضية", "طارئة", "بدون راتب"] },
+        "reason": { "type": "string" },
+        "status": { "type": "string", "enum": ["قيد الانتظار", "مقبول", "مرفوض"] }
+      },
+      "required": ["employeeId", "startDate", "endDate", "type", "status"]
+    },
+    "SalaryRecord": {
+      "title": "SalaryRecord",
+      "description": "Monthly salary payment record",
+      "type": "object",
+      "properties": {
+        "employeeId": { "type": "string" },
+        "month": { "type": "number" },
+        "year": { "type": "number" },
+        "baseSalary": { "type": "number" },
+        "bonuses": { "type": "number" },
+        "deductions": { "type": "number" },
+        "netSalary": { "type": "number" },
+        "status": { "type": "string", "enum": ["مدفوع", "معلق"] }
+      },
+      "required": ["employeeId", "month", "year", "netSalary", "status"]
+    },
+    "Recruitment": {
+      "title": "Recruitment",
+      "description": "Job application",
+      "type": "object",
+      "properties": {
+        "candidateName": { "type": "string" },
+        "position": { "type": "string" },
+        "status": { "type": "string", "enum": ["جديد", "مقابلة", "عرض عمل", "مرفوض", "تم التوظيف"] },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "resumeUrl": { "type": "string" },
+        "notes": { "type": "string" }
+      },
+      "required": ["candidateName", "position", "status"]
+    },
+    "Performance": {
+      "title": "Performance",
+      "description": "Employee performance review",
+      "type": "object",
+      "properties": {
+        "employeeId": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "score": { "type": "number" },
+        "feedback": { "type": "string" },
+        "reviewer": { "type": "string" }
+      },
+      "required": ["employeeId", "score", "date"]
+    },
+    "Training": {
+      "title": "Training",
+      "description": "Employee training session",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "status": { "type": "string", "enum": ["مخطط", "جارٍ", "مكتمل"] },
+        "attendees": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["title", "date", "status"]
+    },
+    "Attendance": {
+      "title": "Attendance",
+      "description": "Daily attendance record",
+      "type": "object",
+      "properties": {
+        "employeeId": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "status": { "type": "string", "enum": ["present", "absent", "late", "leave"] },
+        "timeIn": { "type": "string" },
+        "timeOut": { "type": "string" }
+      },
+      "required": ["employeeId", "date", "status"]
+    },
+    "Student": {
+      "title": "Student",
+      "description": "Student or trainee profile",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "graduated", "dropped"] },
+        "totalPaid": { "type": "number" },
+        "balance": { "type": "number" }
+      },
+      "required": ["name", "phone"]
+    },
+    "Course": {
+      "title": "Course",
+      "description": "Educational course or diploma",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "instructorId": { "type": "string" },
+        "price": { "type": "number" },
+        "duration": { "type": "string" }
+      },
+      "required": ["title", "price"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Financial income or expense",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["income", "expense"] },
+        "amount": { "type": "number" },
+        "category": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "description": { "type": "string" },
+        "branchId": { "type": "string" },
+        "createdBy": { "type": "string" }
+      },
+      "required": ["type", "amount", "category", "date"]
+    },
+    "Project": {
+      "title": "Project",
+      "description": "Media or departmental project",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "department": { "type": "string" },
+        "status": { "type": "string", "enum": ["planning", "in-progress", "review", "completed"] },
+        "deadline": { "type": "string", "format": "date" },
+        "team": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["name", "department", "status"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "Task within a project or general",
+      "type": "object",
+      "properties": {
+        "projectId": { "type": "string" },
+        "title": { "type": "string" },
+        "assignedTo": { "type": "string" },
+        "status": { "type": "string", "enum": ["todo", "doing", "done"] },
+        "priority": { "type": "string", "enum": ["low", "medium", "high"] },
+        "deadline": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "status", "priority"]
+    },
+    "Lead": {
+      "title": "Lead",
+      "description": "Sales lead/prospect",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "source": { "type": "string" },
+        "status": { "type": "string", "enum": ["new", "contacted", "qualified", "closed-won", "closed-lost"] },
+        "assignedTo": { "type": "string" },
+        "lastContact": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "phone", "status"]
+    },
+    "Ticket": {
+      "title": "Ticket",
+      "description": "Customer support ticket",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "issue": { "type": "string" },
+        "status": { "type": "string", "enum": ["نشط", "قيد المراجعة", "مغلق"] },
+        "priority": { "type": "string", "enum": ["عالي", "متوسط", "عادي"] },
+        "date": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "issue", "status"]
+    },
+    "Invoice": {
+      "title": "Invoice",
+      "description": "Financial invoice",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "format": "date-time" },
+        "client": { "type": "string" },
+        "amount": { "type": "number" },
+        "type": { "type": "string", "enum": ["إيراد", "مصروف"] },
+        "status": { "type": "string", "enum": ["مكتمل", "معلق"] }
+      },
+      "required": ["client", "amount", "type", "status"]
+    }
+  },
+  "firestore": {
+    "/tickets/{ticketId}": {
+      "schema": "Ticket",
+      "description": "Customer service tickets"
+    },
+    "/invoices/{invoiceId}": {
+      "schema": "Invoice",
+      "description": "Invoices"
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/branches/{branchId}": {
+      "schema": "Branch",
+      "description": "Branches"
+    },
+    "/employees/{employeeId}": {
+      "schema": "Employee",
+      "description": "HR Employee details"
+    },
+    "/attendance/{attendanceId}": {
+      "schema": "Attendance",
+      "description": "Attendance logs"
+    },
+    "/leaves/{leaveId}": {
+      "schema": "Leave",
+      "description": "Employee leave requests"
+    },
+    "/salary_records/{recordId}": {
+      "schema": "SalaryRecord",
+      "description": "Monthly salary payment records"
+    },
+    "/recruitment/{applicationId}": {
+      "schema": "Recruitment",
+      "description": "Job applications"
+    },
+    "/performance_reviews/{reviewId}": {
+      "schema": "Performance",
+      "description": "Performance reviews"
+    },
+    "/trainings/{trainingId}": {
+      "schema": "Training",
+      "description": "Training sessions"
+    },
+    "/students/{studentId}": {
+      "schema": "Student",
+      "description": "Student records"
+    },
+    "/courses/{courseId}": {
+      "schema": "Course",
+      "description": "Course information"
+    },
+    "/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "Accounting transactions"
+    },
+    "/projects/{projectId}": {
+      "schema": "Project",
+      "description": "Media projects"
+    },
+    "/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "Project tasks"
+    },
+    "/leads/{leadId}": {
+      "schema": "Lead",
+      "description": "Sales leads"
+    }
+  }
+}

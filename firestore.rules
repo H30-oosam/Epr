@@ -1,0 +1,143 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper Functions
+    function isSignedIn() { return request.auth != null; }
+    
+    function isAdmin() { 
+      return isSignedIn() && (
+        request.auth.token.email == 'hossamelwardany132@gmail.com' || 
+        request.auth.token.email == 'hossam@admin.com' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      ); 
+    }
+
+    function isModuleAllowed(module, action) {
+      return isAdmin() || (
+        isSignedIn() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == module || 
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.permissions.contains(module) || 
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.permissions.contains(module + ':' + action)
+        )
+      );
+    }
+
+    function canRead(module) { return isModuleAllowed(module, 'read'); }
+    function canWrite(module) { return isModuleAllowed(module, 'write'); }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // Validation Blueprints
+    function isValidUser(data) {
+      return data.keys().hasAll(['name', 'email', 'role', 'status']) &&
+             data.name is string && data.name.size() <= 100 &&
+             data.email is string && data.email.size() <= 100 &&
+             data.role in ['admin', 'hr', 'finance', 'student_affairs', 'pr', 'media', 'sales', 'customer_service'] &&
+             data.status in ['active', 'inactive'];
+    }
+
+    function isValidTransaction(data) {
+      return data.keys().hasAll(['type', 'amount', 'category', 'date']) &&
+             data.type in ['income', 'expense'] &&
+             data.amount is number &&
+             data.category is string &&
+             data.date is timestamp;
+    }
+
+    // Rules for Collections
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && userId == request.auth.uid && isValidUser(incoming());
+      allow update: if canWrite('users') || (userId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'photoURL']));
+    }
+
+    match /branches/{branchId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /employees/{employeeId} {
+      allow read: if isSignedIn() && (canRead('hr') || existing().userId == request.auth.uid || existing().email == request.auth.token.email);
+      allow write: if canWrite('hr');
+      allow update: if isSignedIn() && (canWrite('hr') || (existing().email == request.auth.token.email && incoming().diff(existing()).affectedKeys().hasOnly(['uid'])));
+    }
+
+    match /attendance/{attendanceId} {
+      allow read: if canRead('hr');
+      allow write: if canWrite('hr');
+    }
+
+    match /leaves/{leaveId} {
+      allow read: if canRead('hr');
+      allow write: if canWrite('hr');
+    }
+
+    match /salary_records/{recordId} {
+      allow read: if canRead('hr') || canRead('finance');
+      allow write: if canWrite('hr') || canWrite('finance');
+    }
+
+    match /recruitment/{applicationId} {
+      allow read: if canRead('hr');
+      allow write: if canWrite('hr');
+    }
+
+    match /performance_reviews/{reviewId} {
+      allow read: if canRead('hr');
+      allow write: if canWrite('hr');
+    }
+
+    match /trainings/{trainingId} {
+      allow read: if isSignedIn();
+      allow write: if canWrite('hr');
+    }
+
+    match /students/{studentId} {
+      allow read: if canRead('students');
+      allow write: if canWrite('students');
+    }
+
+    match /courses/{courseId} {
+      allow read: if isSignedIn();
+      allow write: if canWrite('students');
+    }
+
+    match /transactions/{transactionId} {
+      allow read: if canRead('finance');
+      allow write: if canWrite('finance');
+    }
+
+    match /projects/{projectId} {
+      allow read: if canRead('media');
+      allow write: if canWrite('media');
+    }
+
+    match /tasks/{taskId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && (canWrite('media') || canWrite('hr') || canWrite('sales'));
+    }
+
+    match /leads/{leadId} {
+      allow read: if canRead('sales');
+      allow write: if canWrite('sales');
+    }
+
+    match /tickets/{ticketId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && (canWrite('customer_service') || canWrite('sales'));
+    }
+
+    match /invoices/{invoiceId} {
+      allow read: if canRead('finance');
+      allow write: if canWrite('finance');
+    }
+  }
+}

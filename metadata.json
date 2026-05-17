@@ -1,0 +1,6 @@
+{
+  "name": "Rahab ERP System | نظام رحاب الإداري",
+  "description": "نظام ERP متكامل لشركة رحاب يضم إدارة الموارد البشرية، الحسابات، الطلاب، العلاقات العامة، الميديا، والمبيعات مع دعم كامل للغة العربية والذكاء الاصطناعي.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
