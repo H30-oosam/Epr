@@ -32,7 +32,7 @@ export default function StudentsView({ profile }: { profile: any }) {
   const [search, setSearch] = useState('');
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   
-  const canWrite = profile?.email === 'hossamelwardany132@gmail.com' || profile?.permissions?.includes('students:write') || profile?.permissions?.includes('student_affairs:write');
+  const canWrite = profile?.email === 'hossamelwardany132@gmail.com' || profile?.email === 'hossam@admin.com' || profile?.permissions?.includes('students:write') || profile?.permissions?.includes('student_affairs:write');
   
   // For New Student Modal
   const [showAddModal, setShowAddModal] = useState(false);

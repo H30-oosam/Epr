@@ -33,7 +33,7 @@ export default function CustomerServiceView({ profile }: { profile: any }) {
     name: '', phone: '', issue: '', priority: 'متوسط' as const
   });
 
-  const canWrite = profile?.email === 'hossamelwardany132@gmail.com' || profile?.permissions?.includes('customer_service:write');
+  const canWrite = profile?.email === 'hossamelwardany132@gmail.com' || profile?.email === 'hossam@admin.com' || profile?.permissions?.includes('customer_service:write');
 
   useEffect(() => {
     const q = query(collection(db, 'tickets'), orderBy('date', 'desc'));

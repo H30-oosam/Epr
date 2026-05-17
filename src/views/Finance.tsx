@@ -27,7 +27,7 @@ export default function FinanceView({ profile }: { profile: any }) {
     description: '', amount: 0, type: 'income' as const, category: 'عام', method: 'خزينة رئيسية'
   });
 
-  const canWrite = profile?.email === 'hossamelwardany132@gmail.com' || profile?.permissions?.includes('finance:write');
+  const canWrite = profile?.email === 'hossamelwardany132@gmail.com' || profile?.email === 'hossam@admin.com' || profile?.permissions?.includes('finance:write');
 
   useEffect(() => {
     const q = query(collection(db, 'transactions'), orderBy('date', 'desc'));

@@ -7,7 +7,7 @@ import {
   Megaphone, Film, ShoppingCart, Headset, LogOut, 
   Menu, X, Bell, Search, MessageSquare, Plus, ChevronRight,
   TrendingUp, Calendar as CalendarIcon, CheckCircle2, AlertCircle,
-  ShieldCheck, Bot, Settings, Sliders, Send, Sparkles, ClipboardList
+  ShieldCheck, Bot, Settings, Sliders, Send, Sparkles, ClipboardList, Award
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -21,9 +21,10 @@ import CustomerServiceView from './views/CustomerService';
 import UsersView from './views/Users';
 import DashboardView from './views/Dashboard';
 import TasksView from './views/Tasks';
+import CertificatesView from './views/Certificates';
 
 // --- Types ---
-type View = 'dashboard' | 'hr' | 'finance' | 'students' | 'pr' | 'media' | 'sales' | 'customer_service' | 'users' | 'tasks';
+type View = 'dashboard' | 'hr' | 'finance' | 'students' | 'pr' | 'media' | 'sales' | 'customer_service' | 'users' | 'tasks' | 'certificates';
 
 interface UserProfile {
   uid: string;
@@ -82,7 +83,7 @@ export default function App() {
             email: u.email || '',
             role: isAdmin ? 'admin' : (empData?.role || 'staff'),
             permissions: isAdmin 
-              ? ['dashboard', 'hr', 'finance', 'students', 'pr', 'media', 'sales', 'customer_service', 'users'] 
+              ? ['dashboard', 'hr', 'finance', 'students', 'pr', 'media', 'sales', 'customer_service', 'users', 'tasks', 'certificates'] 
               : (empData?.permissions || ['dashboard']),
             status: 'active',
             photoURL: u.photoURL || undefined
@@ -115,7 +116,7 @@ export default function App() {
         name: 'Hossam ERP Admin',
         email: 'hossam@admin.com',
         role: 'admin',
-        permissions: ['dashboard', 'hr', 'finance', 'students', 'pr', 'media', 'sales', 'customer_service', 'users'],
+        permissions: ['dashboard', 'hr', 'finance', 'students', 'pr', 'media', 'sales', 'customer_service', 'users', 'tasks', 'certificates'],
         status: 'active'
       };
       localStorage.setItem('demo_user', JSON.stringify(demoProfile));
@@ -161,6 +162,7 @@ export default function App() {
       case 'customer_service': return <CustomerServiceView profile={profile} />;
       case 'users': return <UsersView profile={profile} />;
       case 'tasks': return <TasksView profile={profile} />;
+      case 'certificates': return <CertificatesView profile={profile} />;
       default: return <DashboardView profile={profile} />;
     }
   }, [currentView, profile]);
@@ -268,6 +270,7 @@ export default function App() {
           </div>
           <SidebarItem active={currentView === 'hr'} icon={Users} label="الموارد البشرية" onClick={() => setCurrentView('hr')} locked={!hasAccess('hr')} />
           <SidebarItem active={currentView === 'students'} icon={GraduationCap} label="شؤون الطلاب" onClick={() => setCurrentView('students')} locked={!hasAccess('students')} />
+          <SidebarItem active={currentView === 'certificates'} icon={Award} label="إدارة الشهادات" onClick={() => setCurrentView('certificates')} locked={!hasAccess('students')} />
           <SidebarItem active={currentView === 'finance'} icon={CreditCard} label="المالية والحسابات" onClick={() => setCurrentView('finance')} locked={!hasAccess('finance')} />
           <SidebarItem active={currentView === 'pr'} icon={Megaphone} label="الفعاليات والعلاقات" onClick={() => setCurrentView('pr')} locked={!hasAccess('pr')} />
           <SidebarItem active={currentView === 'media'} icon={Film} label="الميديا والإنتاج" onClick={() => setCurrentView('media')} locked={!hasAccess('media')} />
@@ -321,6 +324,7 @@ export default function App() {
                 {currentView === 'sales' && 'المبيعات'}
                 {currentView === 'customer_service' && 'الدعم الفني'}
                 {currentView === 'users' && 'الصلاحيات'}
+                {currentView === 'certificates' && 'منصة الشهادات'}
             </h2>
           </div>
 

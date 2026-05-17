@@ -13,7 +13,7 @@ const EVENTS = [
 ];
 
 export default function PRView({ profile }: { profile: any }) {
-  const canWrite = profile?.email === 'hossamelwardany132@gmail.com' || profile?.permissions?.includes('pr:write');
+  const canWrite = profile?.email === 'hossamelwardany132@gmail.com' || profile?.email === 'hossam@admin.com' || profile?.permissions?.includes('pr:write');
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

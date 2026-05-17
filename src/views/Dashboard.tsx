@@ -11,7 +11,7 @@ export default function DashboardView({ profile }: { profile: any }) {
   const [stats, setStats] = useState({ employees: 0, attendance: 0, tasks: 0, leaves: 0 });
 
   const hasAccess = (module: string) => {
-    return profile?.email === 'hossamelwardany132@gmail.com' || profile?.permissions?.includes(`${module}:read`) || profile?.permissions?.includes(module);
+    return profile?.email === 'hossamelwardany132@gmail.com' || profile?.email === 'hossam@admin.com' || profile?.permissions?.includes(`${module}:read`) || profile?.permissions?.includes(module);
   };
 
   useEffect(() => {

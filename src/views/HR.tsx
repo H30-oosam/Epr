@@ -14,7 +14,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { 
   collection, query, onSnapshot, addDoc, 
   deleteDoc, doc, updateDoc, orderBy, 
-  Timestamp, where, getDoc 
+  Timestamp, where, getDoc, getDocs 
 } from 'firebase/firestore';
 
 type HRTab = 'employees' | 'attendance' | 'salaries' | 'leaves' | 'recruitment' | 'performance' | 'training' | 'contracts' | 'reports';
@@ -69,7 +69,7 @@ export default function HRView({ profile }: { profile: any }) {
   });
 
   const canWrite = (module: string) => {
-    return profile?.email === 'hossamelwardany132@gmail.com' || profile?.permissions?.includes(`${module}:write`);
+    return profile?.email === 'hossamelwardany132@gmail.com' || profile?.email === 'hossam@admin.com' || profile?.permissions?.includes(`${module}:write`);
   };
 
   useEffect(() => {

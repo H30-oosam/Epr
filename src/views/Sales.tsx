@@ -38,7 +38,7 @@ export default function SalesView({ profile }: { profile: any }) {
     name: '', phone: '', source: 'فيسبوك', interest: 'دبلومة الويب', notes: ''
   });
 
-  const canWrite = profile?.email === 'hossamelwardany132@gmail.com' || profile?.permissions?.includes('sales:write');
+  const canWrite = profile?.email === 'hossamelwardany132@gmail.com' || profile?.email === 'hossam@admin.com' || profile?.permissions?.includes('sales:write');
 
   useEffect(() => {
     const q = query(collection(db, 'leads'), orderBy('lastContact', 'desc'));

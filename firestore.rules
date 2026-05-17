@@ -122,7 +122,12 @@ service cloud.firestore {
 
     match /tasks/{taskId} {
       allow read: if isSignedIn();
-      allow write: if isSignedIn() && (canWrite('media') || canWrite('hr') || canWrite('sales'));
+      allow write: if isSignedIn() && (canWrite('media') || canWrite('hr') || canWrite('sales') || canWrite('tasks'));
+    }
+
+    match /issued_certificates/{certId} {
+      allow read: if canRead('students') || canRead('certificates');
+      allow write: if canWrite('students') || canWrite('certificates');
     }
 
     match /leads/{leadId} {
